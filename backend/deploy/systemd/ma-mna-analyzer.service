@@ -1,0 +1,28 @@
+[Unit]
+Description=ma-mna-analyzer FastAPI backend
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/ma-mna-analyzer/backend
+Environment=APP_ENV=production
+Environment=OPENAI_MODEL=gpt-5
+Environment=OPENAI_EXTRACTION_MODEL=gpt-5
+Environment=REQUEST_TIMEOUT_SECONDS=180
+Environment=CONNECT_TIMEOUT_SECONDS=20
+Environment=DOWNLOAD_DIR=/var/lib/ma-mna-analyzer/cache
+EnvironmentFile=/etc/ma-mna-analyzer/secrets.env
+ExecStart=/opt/ma-mna-analyzer/backend/.venv/bin/uvicorn ma_mna_analyzer.api:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/ma-mna-analyzer/cache
+LimitNOFILE=65535
+
+[Install]
+WantedBy=multi-user.target

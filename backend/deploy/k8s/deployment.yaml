@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ma-mna-backend
+  labels:
+    app: ma-mna-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ma-mna-backend
+  template:
+    metadata:
+      labels:
+        app: ma-mna-backend
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/nexgear75/financial-acquisition-analysis-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              value: production
+            - name: OPENAI_MODEL
+              value: gpt-5
+            - name: OPENAI_EXTRACTION_MODEL
+              value: gpt-5
+            - name: REQUEST_TIMEOUT_SECONDS
+              value: "180"
+            - name: CONNECT_TIMEOUT_SECONDS
+              value: "20"
+            - name: DOWNLOAD_DIR
+              value: /app/.cache/ma_mna_analyzer
+          envFrom:
+            - secretRef:
+                name: ma-mna-backend-secrets
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1024Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ma-mna-backend
+spec:
+  selector:
+    app: ma-mna-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000

@@ -1,21 +1,54 @@
+x-backend-common: &backend-common
+  restart: unless-stopped
+  ports:
+    - "8000:8000"
+  environment:
+    APP_ENV: production
+    OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5}
+    OPENAI_EXTRACTION_MODEL: ${OPENAI_EXTRACTION_MODEL:-gpt-5}
+    REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-180}
+    CONNECT_TIMEOUT_SECONDS: ${CONNECT_TIMEOUT_SECONDS:-20}
+    DOWNLOAD_DIR: /app/.cache/ma_mna_analyzer
+    OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY must be set in runtime environment}
+  healthcheck:
+    test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)"]
+    interval: 30s
+    timeout: 5s
+    retries: 5
+    start_period: 20s
+
 services:
   backend:
+    <<: *backend-common
+    profiles: ["remote-image"]
     image: ghcr.io/nexgear75/financial-acquisition-analysis-backend:latest
     container_name: ma-mna-backend
-    restart: unless-stopped
-    ports:
-      - "8000:8000"
+
+  backend-local:
+    <<: *backend-common
+    profiles: ["local-build"]
+    image: ma-mna-analyzer-backend:local
+    container_name: ma-mna-backend-local
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+
+  backend-dev:
+    <<: *backend-common
+    profiles: ["dev"]
+    image: ma-mna-analyzer-backend:dev
+    container_name: ma-mna-backend-dev
     environment:
-      APP_ENV: production
+      APP_ENV: development
       OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5}
       OPENAI_EXTRACTION_MODEL: ${OPENAI_EXTRACTION_MODEL:-gpt-5}
       REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS:-180}
       CONNECT_TIMEOUT_SECONDS: ${CONNECT_TIMEOUT_SECONDS:-20}
-      DOWNLOAD_DIR: /app/.cache/ma_mna_analyzer
+      DOWNLOAD_DIR: /workspace/.cache/ma_mna_analyzer
       OPENAI_API_KEY: ${OPENAI_API_KEY:?OPENAI_API_KEY must be set in runtime environment}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      target: dev
+    volumes:
+      - ../..:/workspace

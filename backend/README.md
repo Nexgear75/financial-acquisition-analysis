@@ -128,11 +128,69 @@ docker run --rm -p 8000:8000 \
    your-backend-image
 ```
 
+### Dockerfile backend
+
+Un Dockerfile multi-stage est fourni dans `Dockerfile` avec :
+- un stage `runtime` pour la production (non-root),
+- un stage `dev` pour le developpement local (hot reload).
+
+Construction de l'image production (stage runtime par defaut) :
+
+```bash
+docker build -t ma-mna-analyzer-backend:latest .
+```
+
+Execution :
+
+```bash
+docker run --rm -p 8000:8000 \
+   -e APP_ENV=production \
+   -e OPENAI_API_KEY="$OPENAI_API_KEY" \
+   -e OPENAI_MODEL=gpt-5 \
+   ma-mna-analyzer-backend:latest
+```
+
+Compose avec image distante (profil `remote-image`) :
+
+```bash
+docker compose \
+  --profile remote-image \
+  --env-file deploy/compose/.env.prod \
+  -f deploy/compose/docker-compose.prod.yml \
+  up -d backend
+```
+
+Compose avec build local (profil `local-build`, sans pull registry) :
+
+```bash
+docker compose \
+   --profile local-build \
+   --env-file deploy/compose/.env.prod \
+   -f deploy/compose/docker-compose.prod.yml \
+   up -d backend-local --build
+```
+
+Stage dev (hot reload, profil `dev`) :
+
+```bash
+docker build --target dev -t ma-mna-analyzer-backend:dev .
+
+docker compose \
+   --profile dev \
+   --env-file deploy/compose/.env.prod \
+   -f deploy/compose/docker-compose.prod.yml \
+   up -d backend-dev --build
+```
+
 Templates prets a copier :
 - `deploy/systemd/ma-mna-analyzer.service`
 - `deploy/compose/docker-compose.prod.yml`
 - `deploy/k8s/deployment.yaml`
 - guide d'usage: `deploy/README.md`
+
+Fichiers Docker associes :
+- `Dockerfile`
+- `.dockerignore`
 
 ## Lancer l'API
 

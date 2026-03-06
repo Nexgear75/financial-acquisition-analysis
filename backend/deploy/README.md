@@ -1,47 +1,51 @@
-# Deployment templates (production)
+# Templates de deploiement (production)
 
-This folder contains copy-ready templates for production deployment with runtime secret injection.
+Ce dossier contient des templates prets a copier pour le deploiement production avec injection de secrets au runtime.
 
 ## Structure
 
-- `systemd/ma-mna-analyzer.service`: systemd unit running uvicorn.
-- `systemd/secrets.env.example`: template for `/etc/ma-mna-analyzer/secrets.env`.
-- `compose/docker-compose.prod.yml`: Docker Compose production service.
-- `compose/.env.prod.example`: runtime env template used by compose.
-- `k8s/deployment.yaml`: Kubernetes Deployment + Service.
-- `k8s/secret.example.yaml`: Kubernetes Secret template.
+- `systemd/ma-mna-analyzer.service` : unite systemd qui lance uvicorn.
+- `systemd/secrets.env.example` : modele pour `/etc/ma-mna-analyzer/secrets.env`.
+- `compose/docker-compose.prod.yml` : service Docker Compose pour la production.
+- `compose/.env.prod.example` : modele de variables runtime pour Compose.
+- `k8s/deployment.yaml` : Deployment + Service Kubernetes.
+- `k8s/secret.example.yaml` : modele de Secret Kubernetes.
 
-## systemd quick start
+## Demarrage rapide systemd
 
-1. Copy service file:
+1. Copier le fichier de service :
    - `sudo cp deploy/systemd/ma-mna-analyzer.service /etc/systemd/system/`
-2. Create secrets file:
+2. Creer le fichier de secrets :
    - `sudo mkdir -p /etc/ma-mna-analyzer`
    - `sudo cp deploy/systemd/secrets.env.example /etc/ma-mna-analyzer/secrets.env`
-   - Edit and set `OPENAI_API_KEY`, then `sudo chmod 600 /etc/ma-mna-analyzer/secrets.env`
-3. Enable service:
+   - Renseigner `OPENAI_API_KEY`, puis `sudo chmod 600 /etc/ma-mna-analyzer/secrets.env`
+3. Activer le service :
    - `sudo systemctl daemon-reload`
    - `sudo systemctl enable --now ma-mna-analyzer`
 
-## Docker Compose quick start
+## Demarrage rapide Docker Compose
 
-1. Create runtime env file:
+1. Creer le fichier d'environnement runtime :
    - `cp deploy/compose/.env.prod.example deploy/compose/.env.prod`
-   - Edit and set `OPENAI_API_KEY`
-2. Start service:
-   - `docker compose --env-file deploy/compose/.env.prod -f deploy/compose/docker-compose.prod.yml up -d`
+   - Renseigner `OPENAI_API_KEY`
+2. Lancer le service (profil image distante) :
+   - `docker compose --profile remote-image --env-file deploy/compose/.env.prod -f deploy/compose/docker-compose.prod.yml up -d`
+3. Lancer le service (profil build local) :
+   - `docker compose --profile local-build --env-file deploy/compose/.env.prod -f deploy/compose/docker-compose.prod.yml up -d backend-local --build`
+4. Lancer le service (profil dev avec hot reload) :
+   - `docker compose --profile dev --env-file deploy/compose/.env.prod -f deploy/compose/docker-compose.prod.yml up -d backend-dev --build`
 
-## Kubernetes quick start
+## Demarrage rapide Kubernetes
 
-1. Create secret from template:
+1. Creer le secret a partir du modele :
    - `cp deploy/k8s/secret.example.yaml deploy/k8s/secret.yaml`
-   - Edit and set `OPENAI_API_KEY`
-2. Apply manifests:
+   - Renseigner `OPENAI_API_KEY`
+2. Appliquer les manifests :
    - `kubectl apply -f deploy/k8s/secret.yaml`
    - `kubectl apply -f deploy/k8s/deployment.yaml`
 
-## Security notes
+## Notes de securite
 
-- Never commit real secret files.
-- Rotate `OPENAI_API_KEY` regularly.
-- Restrict read access to secret files and cluster namespaces.
+- Ne jamais commit de fichiers secrets reels.
+- Faire une rotation reguliere de `OPENAI_API_KEY`.
+- Restreindre l'acces en lecture aux fichiers de secrets et aux namespaces Kubernetes.
